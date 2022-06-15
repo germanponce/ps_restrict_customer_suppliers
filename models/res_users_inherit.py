@@ -37,6 +37,12 @@ class ResPartner(models.Model):
 
     @api.model
     def _search(self, args, offset=0, limit=None, order=None, count=False, access_rights_uid=None):
+        if not self.env.user.dont_show_suppliers and not self.env.user.dont_show_customers:
+            res = super(ResPartner, self)._search(args, offset=offset, limit=limit,
+                                                    order=order, count=count, access_rights_uid=access_rights_uid)
+
+            return res
+
         cr = self.env.cr
         suppliers_and_customers_same_time = []
         suppliers_ids = []
@@ -73,7 +79,7 @@ class ResPartner(models.Model):
         if self.env.user.dont_show_customers and not self.env.user.dont_show_suppliers:
             ids_show = suppliers_ids + suppliers_and_customers_same_time
             args.append(('id', 'in', tuple(ids_show)))
-            
+
             # args.append(('customer_rank', '=', 0))
             # args.append(('supplier_rank', '>', 0))
         res = super(ResPartner, self)._search(args, offset=offset, limit=limit,
