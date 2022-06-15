@@ -40,8 +40,10 @@ class ResPartner(models.Model):
 
         if self.env.user.dont_show_suppliers:
             args.append(('supplier_rank', '=', 0))
+            args.append(('customer_rank', '>', 0))
         if self.env.user.dont_show_customers:
             args.append(('customer_rank', '=', 0))
+            args.append(('supplier_rank', '>', 0))
         res = super(ResPartner, self)._search(args, offset=offset, limit=limit,
                                                     order=order, count=count, access_rights_uid=access_rights_uid)
 
