@@ -37,13 +37,45 @@ class ResPartner(models.Model):
 
     @api.model
     def _search(self, args, offset=0, limit=None, order=None, count=False, access_rights_uid=None):
+        cr = self.env.cr
+        suppliers_and_customers_same_time = []
+        suppliers_ids = []
+        customers_ids = []
 
-        if self.env.user.dont_show_suppliers:
-            args.append(('supplier_rank', '=', 0))
-            args.append(('customer_rank', '>', 0))
-        if self.env.user.dont_show_customers:
-            args.append(('customer_rank', '=', 0))
-            args.append(('supplier_rank', '>', 0))
+        #### Proveedores y Clientes ####
+        cr.execute("""
+            select id,name,supplier_rank,supplier_rank from res_partner where supplier_rank>=1 and customer_rank>=1;
+            """)
+        cr_res = cr.fetchall()
+        if cr_res and cr_res[0] and cr_res[0][0]:
+            suppliers_and_customers_same_time = [x[0] for x in cr_res]
+
+        #### Proveedores ####
+        cr.execute("""
+            select id,name,supplier_rank,supplier_rank from res_partner where supplier_rank>=1 and customer_rank=0;
+            """)
+        cr_res = cr.fetchall()
+        if cr_res and cr_res[0] and cr_res[0][0]:
+            suppliers_ids = [x[0] for x in cr_res]
+
+        #### Clientes ####
+        cr.execute("""
+            select id,name,supplier_rank,supplier_rank from res_partner where supplier_rank = 0 and customer_rank>=1;
+            """)
+        cr_res = cr.fetchall()
+        if cr_res and cr_res[0] and cr_res[0][0]:
+            customers_ids = [x[0] for x in cr_res]
+
+        if self.env.user.dont_show_suppliers and not self.env.user.dont_show_customers:
+            ids_show = customers_ids + suppliers_and_customers_same_time
+            args.append(('id', 'in', tuple(ids_show)))
+
+        if self.env.user.dont_show_customers and not self.env.user.dont_show_suppliers:
+            ids_show = suppliers_ids + suppliers_and_customers_same_time
+            args.append(('id', 'in', tuple(ids_show)))
+            
+            # args.append(('customer_rank', '=', 0))
+            # args.append(('supplier_rank', '>', 0))
         res = super(ResPartner, self)._search(args, offset=offset, limit=limit,
                                                     order=order, count=count, access_rights_uid=access_rights_uid)
 
